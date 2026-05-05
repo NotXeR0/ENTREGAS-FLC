@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entregas FLC</title>
+<link rel="icon" type="image/png" href="logoflc.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1f2433;
+    --border: #2a3045;
+    --accent: #f5a623;
+    --accent2: #3ecf8e;
+    --danger: #e05252;
+    --text: #eaedf5;
+    --text2: #8892a4;
+    --text3: #4a5568;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--display);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* LOADER */
+  #loader {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.4s;
+  }
+  .loader-logo { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.05em; }
+  .loader-logo span { color: var(--accent); }
+  .loader-sub { font-family: var(--mono); font-size: 0.72rem; color: var(--text3); margin-top: 8px; letter-spacing: 0.15em; }
+  .loader-bar { width: 140px; height: 2px; background: var(--border); margin-top: 2rem; border-radius: 2px; overflow: hidden; }
+  .loader-bar-fill { height: 100%; background: var(--accent); animation: loadfill 1s ease forwards; }
+  @keyframes loadfill { from { width: 0 } to { width: 100% } }
+
+  /* LAYOUT */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.9rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em; }
+  .logo span { color: var(--accent); }
+  .badge-fecha {
+    font-family: var(--mono); font-size: 0.7rem; color: var(--text2);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 4px;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 1; min-width: 80px; padding: 0.85rem 0.5rem;
+    text-align: center; font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text3); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--text2); }
+
+  /* CONTENT */
+  .content { flex: 1; padding: 1.25rem; max-width: 640px; margin: 0 auto; width: 100%; }
+  .panel { display: none; animation: fadeIn 0.2s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* CARDS */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text3); margin-bottom: 1rem;
+  }
+
+  /* FORM */
+  .field { margin-bottom: 1rem; }
+  .field label {
+    display: block; font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text2); margin-bottom: 0.4rem;
+  }
+  .field input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.8rem 1rem; color: var(--text);
+    font-family: var(--mono); font-size: 0.9rem;
+    transition: border-color 0.15s; outline: none;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text3); }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 0.85rem 1.5rem; border-radius: 8px;
+    font-family: var(--display); font-size: 0.85rem; font-weight: 600;
+    letter-spacing: 0.02em; cursor: pointer; border: none;
+    transition: all 0.15s; width: 100%;
+  }
+  .btn-primary { background: var(--accent); color: #1a1000; }
+  .btn-primary:hover { background: #ffd166; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: white; }
+  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--text2); color: var(--text); }
+  .btn-success { background: var(--accent2); color: #0a1f15; }
+  .btn-success:hover { background: #5ddeaa; }
+  .btn-sm { padding: 0.5rem 0.9rem; font-size: 0.75rem; width: auto; }
+
+  /* PRECIO PREVIEW */
+  .price-preview {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem; margin-top: 0.75rem;
+    display: none;
+  }
+  .price-preview.visible { display: block; }
+  .price-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; font-family: var(--mono); font-size: 0.82rem;
+  }
+  .price-row.total {
+    border-top: 1px solid var(--border); margin-top: 8px;
+    padding-top: 12px; font-size: 1rem; font-weight: 500;
+    color: var(--accent);
+  }
+  .price-row span:first-child { color: var(--text2); }
+
+  /* PEDIDO ITEM */
+  .pedido-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.75rem;
+    transition: border-color 0.15s;
+  }
+  .pedido-item:hover { border-color: var(--text3); }
+  .pedido-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 0.6rem;
+  }
+  .pedido-num {
+    font-family: var(--mono); font-size: 0.7rem; color: var(--text3);
+  }
+  .pedido-serie {
+    font-family: var(--mono); font-size: 0.7rem; font-weight: 500;
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 4px; color: var(--accent);
+  }
+  .pedido-dir {
+    font-size: 0.85rem; color: var(--text); margin-bottom: 0.6rem;
+    line-height: 1.4;
+  }
+  .pedido-meta {
+    display: flex; flex-wrap: wrap; gap: 0.75rem;
+    font-family: var(--mono); font-size: 0.72rem; color: var(--text2);
+  }
+  .pedido-meta span { display: flex; align-items: center; gap: 4px; }
+  .pedido-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+
+  /* ENVIO ITEM */
+  .envio-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.75rem;
+    transition: all 0.15s;
+  }
+  .envio-item.entregado { border-color: var(--accent2); opacity: 0.7; }
+  .envio-check-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 0.6rem;
+  }
+  .check-box {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px solid var(--border); background: var(--bg);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .check-box.checked { background: var(--accent2); border-color: var(--accent2); }
+  .check-box.checked::after { content: '✓'; color: #0a1f15; font-size: 13px; font-weight: 700; }
+  .envio-addr { flex: 1; font-size: 0.85rem; line-height: 1.4; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem;
+  }
+  .stat-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+  .stat-value { font-family: var(--mono); font-size: 1.3rem; font-weight: 500; color: var(--text); }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.green { color: var(--accent2); }
+
+  /* HISTORIAL */
+  .hist-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 0.75rem; overflow: hidden;
+  }
+  .hist-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.85rem 1.25rem; cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+  .hist-date {
+    font-family: var(--mono); font-size: 0.8rem; font-weight: 500; color: var(--accent);
+  }
+  .hist-toggle { color: var(--text3); font-size: 0.75rem; }
+  .hist-body { padding: 1rem 1.25rem; display: none; }
+  .hist-body.open { display: block; }
+  .hist-reporte {
+    font-family: var(--mono); font-size: 0.78rem; color: var(--text2);
+    white-space: pre-wrap; line-height: 1.8;
+  }
+  .hist-actions { margin-top: 0.75rem; display: flex; justify-content: flex-end; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.75rem 1.25rem;
+    font-family: var(--mono); font-size: 0.8rem; color: var(--text);
+    opacity: 0; transition: all 0.3s; z-index: 9999;
+    pointer-events: none; min-width: 200px; text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.success { border-color: var(--accent2); color: var(--accent2); }
+  #toast.error { border-color: var(--danger); color: var(--danger); }
+  #toast.info { border-color: var(--accent); color: var(--accent); }
+
+  /* LOADER BTN */
+  .spin { display: inline-block; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500; padding: 1rem; display: none;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; max-width: 400px; width: 100%;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .modal p { font-size: 0.85rem; color: var(--text2); line-height: 1.6; margin-bottom: 1.5rem; }
+  .modal-actions { display: flex; gap: 0.75rem; }
+
+  /* REPORTE PREVIEW */
+  .reporte-box {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
+    font-family: var(--mono); font-size: 0.78rem; color: var(--text2);
+    white-space: pre-wrap; line-height: 1.9;
+  }
+
+  .empty-state {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--text3); font-size: 0.85rem;
+  }
+  .empty-icon { font-size: 2rem; margin-bottom: 0.75rem; opacity: 0.4; }
+
+  .section-title {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text3);
+    margin-bottom: 0.75rem; margin-top: 1.5rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .dist-badge {
+    font-family: var(--mono); font-size: 0.65rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 2px 6px; border-radius: 4px; color: var(--text3);
+  }
+
+  @media (max-width: 400px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .tab { font-size: 0.65rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <img src="logoflc.gif" alt="FLC" style="width:180px;height:auto;object-fit:contain;" onerror="this.style.display='none';document.getElementById('loader-fallback').style.display='block';">
+  <div id="loader-fallback" style="display:none;">
+    <div class="loader-logo">FLC<span>.</span></div>
+    <div class="loader-sub">SISTEMA DE ENTREGAS · NAVOJOA</div>
+  </div>
+  <div class="loader-bar" style="margin-top:2rem;"><div class="loader-bar-fill"></div></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAL CONFIRMAR DÍA -->
+<div class="modal-overlay" id="modal-dia">
+  <div class="modal">
+    <h2>¿Terminar el día?</h2>
+    <p>Se generará el reporte del día con todos los pedidos actuales y se guardará en el historial. Esta acción limpiará la lista de pedidos activos.</p>
+    <div id="modal-reporte-preview" class="reporte-box" style="display:none;font-size:0.75rem;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarTerminarDia()">Confirmar y guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <img src="logoflc.png" alt="FLC" style="height:32px;width:auto;object-fit:contain;" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block';">
+    <div id="logo-fallback" class="logo" style="display:none;">FLC<span>.</span></div>
+    <div class="badge-fecha" id="fecha-badge">—</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="setTab('crear')">+ Crear</div>
+    <div class="tab" onclick="setTab('envios')">Envíos</div>
+    <div class="tab" onclick="setTab('terminar')">Terminar día</div>
+    <div class="tab" onclick="setTab('historial')">Historial</div>
+  </div>
+
+  <div class="content">
+
+    <!-- TAB CREAR -->
+    <div class="panel active" id="panel-crear">
+      <div class="card">
+        <div class="card-title">Nuevo pedido</div>
+        <div class="field">
+          <label>Dirección de entrega</label>
+          <input type="text" id="inp-dir" placeholder="Ej: Calle Álvaro Obregón 120, Navojoa" />
+        </div>
+        <div class="field">
+          <label>Total del producto ($MXN)</label>
+          <input type="number" id="inp-prod" placeholder="0.00" min="0" step="0.01" />
+        </div>
+        <div class="field">
+          <label>Precio gasolina ($/litro)</label>
+          <input type="number" id="inp-gas" placeholder="Ej: 24.50" min="0" step="0.01" />
+        </div>
+
+        <div class="price-preview" id="price-preview">
+          <div class="price-row">
+            <span>Distancia estimada</span>
+            <span id="prev-dist">—</span>
+          </div>
+          <div class="price-row">
+            <span>Costo gasolina</span>
+            <span id="prev-gas">—</span>
+          </div>
+          <div class="price-row">
+            <span>Tarifa base</span>
+            <span>$20.00</span>
+          </div>
+          <div class="price-row">
+            <span>Envío</span>
+            <span id="prev-envio">—</span>
+          </div>
+          <div class="price-row">
+            <span>Producto</span>
+            <span id="prev-prod">—</span>
+          </div>
+          <div class="price-row total">
+            <span>Total</span>
+            <span id="prev-total">—</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="btn-calcular" onclick="calcularPedido()" style="margin-top:1rem;">
+          Calcular y agregar pedido
+        </button>
+      </div>
+
+      <div id="section-pedidos-label" class="section-title" style="display:none;">Pedidos del día</div>
+      <div id="lista-pedidos"></div>
+    </div>
+
+    <!-- TAB ENVÍOS -->
+    <div class="panel" id="panel-envios">
+      <div class="stats-grid" id="stats-envios" style="display:none;">
+        <div class="stat-card">
+          <div class="stat-label">Entregados</div>
+          <div class="stat-value green" id="stat-entregados">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pendientes</div>
+          <div class="stat-value accent" id="stat-pendientes">0</div>
+        </div>
+      </div>
+      <div id="lista-envios"></div>
+    </div>
+
+    <!-- TAB TERMINAR -->
+    <div class="panel" id="panel-terminar">
+      <div class="card" id="card-terminar-stats" style="display:none;">
+        <div class="card-title">Resumen del día</div>
+        <div class="stats-grid" style="margin-bottom:0;">
+          <div class="stat-card">
+            <div class="stat-label">Total pedidos</div>
+            <div class="stat-value" id="t-total">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Entregados</div>
+            <div class="stat-value green" id="t-entregados">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total productos</div>
+            <div class="stat-value accent" id="t-productos">$0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total envíos</div>
+            <div class="stat-value" id="t-envios">$0</div>
+          </div>
+        </div>
+      </div>
+      <div id="terminar-empty" class="empty-state" style="display:none;">
+        <div class="empty-icon">📋</div>
+        <div>No hay pedidos activos hoy</div>
+      </div>
+      <button class="btn btn-danger" id="btn-terminar-dia" onclick="terminarDia()" style="display:none; margin-top:0.5rem;">
+        Terminar día y generar reporte
+      </button>
+    </div>
+
+    <!-- TAB HISTORIAL -->
+    <div class="panel" id="panel-historial">
+      <div id="lista-historial"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ORS_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImZiZDIxNzYxNWMxODQ1MjE5NTUxYTlkYWZlODQ2NGUzIiwiaCI6Im11cm11cjY0In0=';
+const ORIGEN_STR = 'Carretera Navojoa-Camoa Km. 5 Sivacobe Tesia Finca la Cruz Navojoa Sonora Mexico';
+const TARIFA_BASE = 20;
+const CONSUMO = 17.2;
+
+let pedidos = [];
+let historial = [];
+let origenCoords = null;
+let calculando = false;
+
+// UTILS
+function fmt$(n) { return '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function fmtKm(n) { return Number(n).toFixed(1) + ' km'; }
+function haversine(coord1, coord2) {
+  const R = 6371;
+  const toRad = deg => deg * Math.PI / 180;
+
+  const lat1 = coord1[1];
+  const lon1 = coord1[0];
+  const lat2 = coord2[1];
+  const lon2 = coord2[0];
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+function today() {
+  const d = new Date();
+  return d.getFullYear().toString() +
+    String(d.getMonth()+1).padStart(2,'0') +
+    String(d.getDate()).padStart(2,'0');
+}
+function fechaLegible(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-MX', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+}
+function horaLegible(iso) {
+  return new Date(iso).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+}
+
+function toast(msg, tipo='info', ms=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + tipo;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => { t.className = ''; }, ms);
+}
+
+// STORAGE
+function guardar() {
+  localStorage.setItem('flc_pedidos', JSON.stringify(pedidos));
+  localStorage.setItem('flc_historial', JSON.stringify(historial));
+}
+function cargar() {
+  try { pedidos = JSON.parse(localStorage.getItem('flc_pedidos')) || []; } catch { pedidos = []; }
+  try { historial = JSON.parse(localStorage.getItem('flc_historial')) || []; } catch { historial = []; }
+}
+
+// API ORS
+async function geocode(texto) {
+  const url = `https://api.openrouteservice.org/geocode/search?api_key=${ORS_KEY}&text=${encodeURIComponent(texto)}&boundary.country=MX&size=1`;
+  const r = await fetch(url);
+  if (r.status === 401 || r.status === 403) throw new Error('API key inválida (401/403)');
+  if (r.status === 429) throw new Error('Límite de API excedido (429). Intenta más tarde.');
+  if (!r.ok) throw new Error('Error de geocoding: ' + r.status);
+  const d = await r.json();
+  if (!d.features || d.features.length === 0) throw new Error('Dirección no encontrada. Intenta ser más específico.');
+  return d.features[0].geometry.coordinates; // [lon, lat]
+}
+
+async function getDistancia(coordOrigen, coordDestino) {
+  const url = 'https://api.openrouteservice.org/v2/directions/driving-car';
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': ORS_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ coordinates: [coordOrigen, coordDestino] })
+  });
+  if (r.status === 401 || r.status === 403) throw new Error('API key inválida (401/403)');
+  if (r.status === 429) throw new Error('Límite de API excedido. Intenta más tarde.');
+  if (!r.ok) throw new Error('Error calculando ruta: ' + r.status);
+  const d = await r.json();
+  const metros = d.routes[0].summary.distance;
+  return metros / 1000; // km
+}
+
+// CALCULAR PEDIDO
+async function calcularPedido() {
+  if (calculando) return;
+  const dir = document.getElementById('inp-dir').value.trim();
+  const prod = parseFloat(document.getElementById('inp-prod').value);
+  const gas = parseFloat(document.getElementById('inp-gas').value);
+
+  if (!dir) { toast('Ingresa una dirección', 'error'); return; }
+  if (isNaN(prod) || prod <= 0) { toast('Ingresa el total del producto', 'error'); return; }
+  if (isNaN(gas) || gas <= 0) { toast('Ingresa el precio de gasolina', 'error'); return; }
+
+  calculando = true;
+  const btn = document.getElementById('btn-calcular');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⟳</span> Calculando ruta...';
+
+  try {
+    // Geocode origen (cache)
+    if (!origenCoords) {
+      toast('Geocodificando origen...', 'info', 5000);
+      origenCoords = await geocode(ORIGEN_STR);
+    }
+    toast('Geocodificando destino...', 'info', 5000);
+    const destCoords = await geocode(dir + ' Navojoa Sonora México');
+    toast('Calculando distancia...', 'info', 5000);
+    const distKm = haversine(origenCoords, destCoords) * 5.29;
+
+    const costoGas = (distKm / CONSUMO) * gas;
+    const envio = costoGas + TARIFA_BASE;
+    const total = prod + envio;
+
+    // Mostrar preview
+    document.getElementById('prev-dist').textContent = fmtKm(distKm);
+    document.getElementById('prev-gas').textContent = fmt$(costoGas);
+    document.getElementById('prev-envio').textContent = fmt$(envio);
+    document.getElementById('prev-prod').textContent = fmt$(prod);
+    document.getElementById('prev-total').textContent = fmt$(total);
+    document.getElementById('price-preview').classList.add('visible');
+
+    // Crear pedido
+    const num = pedidos.length + 1;
+    const serie = today() + '-' + num;
+    const pedido = {
+      id: Date.now(),
+      num,
+      serie,
+      dir,
+      prod,
+      gas,
+      dist: Math.round(distKm * 10) / 10,
+      envio: Math.round(envio * 100) / 100,
+      total: Math.round(total * 100) / 100,
+      entregado: false,
+      fecha: new Date().toISOString()
+    };
+    pedidos.push(pedido);
+    guardar();
+
+    // Limpiar form
+    document.getElementById('inp-dir').value = '';
+    document.getElementById('inp-prod').value = '';
+    document.getElementById('inp-gas').value = '';
+
+    toast('Pedido #' + num + ' agregado ✓', 'success');
+    renderPedidos();
+    renderEnvios();
+    renderTerminar();
+
+  } catch(e) {
+    toast(e.message, 'error', 4000);
+  }
+
+  calculando = false;
+  btn.disabled = false;
+  btn.innerHTML = 'Calcular y agregar pedido';
+}
+
+// ELIMINAR PEDIDO
+function eliminarPedido(id) {
+  if (!confirm('¿Eliminar este pedido?')) return;
+  pedidos = pedidos.filter(p => p.id !== id);
+  // Re-numerar
+  pedidos.forEach((p, i) => {
+    p.num = i + 1;
+    p.serie = today() + '-' + (i + 1);
+  });
+  guardar();
+  renderPedidos();
+  renderEnvios();
+  renderTerminar();
+  toast('Pedido eliminado', 'info');
+}
+
+// TOGGLE ENTREGADO
+function toggleEntregado(id) {
+  const p = pedidos.find(x => x.id === id);
+  if (!p) return;
+  p.entregado = !p.entregado;
+  guardar();
+  renderEnvios();
+  renderTerminar();
+}
+
+// RENDER PEDIDOS
+function renderPedidos() {
+  const el = document.getElementById('lista-pedidos');
+  const label = document.getElementById('section-pedidos-label');
+  if (pedidos.length === 0) {
+    label.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  label.style.display = 'flex';
+  el.innerHTML = pedidos.map(p => `
+    <div class="pedido-item">
+      <div class="pedido-header">
+        <div class="pedido-num">#${p.num} · ${horaLegible(p.fecha)}</div>
+        <div class="pedido-serie">${p.serie}</div>
+      </div>
+      <div class="pedido-dir">${p.dir}</div>
+      <div class="pedido-meta">
+        <span>📦 ${fmt$(p.prod)}</span>
+        <span>🚚 ${fmt$(p.envio)}</span>
+        <span class="dist-badge">${fmtKm(p.dist)}</span>
+        <span style="color:var(--accent);font-weight:500;">Total: ${fmt$(p.total)}</span>
+      </div>
+      <div class="pedido-actions">
+        <button class="btn btn-danger btn-sm" onclick="eliminarPedido(${p.id})">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// RENDER ENVÍOS
+function renderEnvios() {
+  const el = document.getElementById('lista-envios');
+  const stats = document.getElementById('stats-envios');
+
+  if (pedidos.length === 0) {
+    stats.style.display = 'none';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🚚</div><div>No hay pedidos activos</div></div>';
+    return;
+  }
+
+  const ent = pedidos.filter(p => p.entregado).length;
+  const pend = pedidos.length - ent;
+  stats.style.display = 'grid';
+  document.getElementById('stat-entregados').textContent = ent;
+  document.getElementById('stat-pendientes').textContent = pend;
+
+  const ordenados = [...pedidos].sort((a, b) => {
+    if (a.entregado !== b.entregado) return a.entregado ? 1 : -1;
+    return a.dist - b.dist;
+  });
+
+  el.innerHTML = ordenados.map(p => `
+    <div class="envio-item ${p.entregado ? 'entregado' : ''}">
+      <div class="envio-check-row">
+        <div class="check-box ${p.entregado ? 'checked' : ''}" onclick="toggleEntregado(${p.id})"></div>
+        <div class="envio-addr">
+          <div style="font-size:0.78rem;color:var(--text3);margin-bottom:2px;">${p.serie}</div>
+          <div style="font-size:0.88rem;">${p.dir}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;">
+        <div style="font-family:var(--mono);font-size:0.75rem;color:var(--text2);">
+          ${fmtKm(p.dist)} · Envío: ${fmt$(p.envio)}
+        </div>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.dir + ' Navojoa Sonora')}" target="_blank">
+          <button class="btn btn-ghost btn-sm">📍 Maps</button>
+        </a>
+      </div>
+    </div>
+  `).join('');
+}
+
+// RENDER TERMINAR
+function renderTerminar() {
+  const empty = document.getElementById('terminar-empty');
+  const stats = document.getElementById('card-terminar-stats');
+  const btn = document.getElementById('btn-terminar-dia');
+
+  if (pedidos.length === 0) {
+    empty.style.display = 'block';
+    stats.style.display = 'none';
+    btn.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  stats.style.display = 'block';
+  btn.style.display = 'block';
+
+  const ent = pedidos.filter(p => p.entregado).length;
+  const totalProd = pedidos.reduce((a, p) => a + p.prod, 0);
+  const totalEnvio = pedidos.reduce((a, p) => a + p.envio, 0);
+
+  document.getElementById('t-total').textContent = pedidos.length;
+  document.getElementById('t-entregados').textContent = ent;
+  document.getElementById('t-productos').textContent = fmt$(totalProd);
+  document.getElementById('t-envios').textContent = fmt$(totalEnvio);
+}
+
+// GENERAR REPORTE
+function generarReporteTexto() {
+  const ent = pedidos.filter(p => p.entregado).length;
+  const noEnt = pedidos.length - ent;
+  const totalGas = pedidos.reduce((a, p) => a + (p.envio - TARIFA_BASE), 0);
+  const totalProd = pedidos.reduce((a, p) => a + p.prod, 0);
+  const totalEnvio = pedidos.reduce((a, p) => a + p.envio, 0);
+
+  const lines = [
+    '══ REPORTE DEL DÍA ══',
+    fechaLegible(new Date().toISOString()),
+    '',
+    `Entregados:       ${ent}`,
+    `No entregados:    ${noEnt}`,
+    `Total gasolina:   ${fmt$(totalGas)}`,
+    `Total productos:  ${fmt$(totalProd)}`,
+    `Total envíos:     ${fmt$(totalEnvio)}`,
+    '',
+    '── DETALLE ──',
+    ...pedidos.map(p => `${p.serie}  ${p.entregado ? '✓ Entregado' : '✗ No entregado'}`),
+  ];
+  return lines.join('\n');
+}
+
+function terminarDia() {
+  if (pedidos.length === 0) { toast('No hay pedidos activos', 'error'); return; }
+  const reporte = generarReporteTexto();
+  document.getElementById('modal-reporte-preview').style.display = 'block';
+  document.getElementById('modal-reporte-preview').textContent = reporte;
+  document.getElementById('modal-dia').classList.add('open');
+}
+
+function cerrarModal() {
+  document.getElementById('modal-dia').classList.remove('open');
+}
+
+function confirmarTerminarDia() {
+  const reporte = generarReporteTexto();
+  const entry = {
+    fecha: new Date().toISOString(),
+    fechaStr: fechaLegible(new Date().toISOString()),
+    reporte
+  };
+  historial.unshift(entry);
+  pedidos = [];
+  origenCoords = null;
+  guardar();
+  cerrarModal();
+  renderPedidos();
+  renderEnvios();
+  renderTerminar();
+  renderHistorial();
+  setTab('historial');
+  toast('Reporte guardado ✓', 'success');
+}
+
+// RENDER HISTORIAL
+function renderHistorial() {
+  const el = document.getElementById('lista-historial');
+  if (historial.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📁</div><div>No hay reportes guardados</div></div>';
+    return;
+  }
+  el.innerHTML = historial.map((h, i) => {
+    const ahora = Date.now();
+    const edad = ahora - new Date(h.fecha).getTime();
+    const puedeEliminar = edad >= 172800000; // 48h
+    return `
+      <div class="hist-item">
+        <div class="hist-header" onclick="toggleHist(${i})">
+          <div class="hist-date">${h.fechaStr}</div>
+          <div class="hist-toggle" id="hist-icon-${i}">▼</div>
+        </div>
+        <div class="hist-body" id="hist-body-${i}">
+          <div class="hist-reporte">${h.reporte}</div>
+          <div class="hist-actions">
+            ${puedeEliminar
+              ? `<button class="btn btn-danger btn-sm" onclick="eliminarHistorial(${i})">Eliminar</button>`
+              : `<span style="font-size:0.7rem;color:var(--text3);font-family:var(--mono);">Disponible para eliminar en 48h</span>`
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleHist(i) {
+  const body = document.getElementById('hist-body-' + i);
+  const icon = document.getElementById('hist-icon-' + i);
+  body.classList.toggle('open');
+  icon.textContent = body.classList.contains('open') ? '▲' : '▼';
+}
+
+function eliminarHistorial(i) {
+  const h = historial[i];
+  const edad = Date.now() - new Date(h.fecha).getTime();
+  if (edad < 172800000) { toast('No se puede eliminar antes de 48 horas', 'error'); return; }
+  if (!confirm('¿Eliminar este reporte del historial?')) return;
+  historial.splice(i, 1);
+  guardar();
+  renderHistorial();
+  toast('Reporte eliminado', 'info');
+}
+
+// TABS
+function setTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['crear','envios','terminar','historial'][i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'envios') renderEnvios();
+  if (tab === 'terminar') renderTerminar();
+  if (tab === 'historial') renderHistorial();
+}
+
+// FECHA BADGE
+function actualizarFecha() {
+  const d = new Date();
+  const str = d.toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' });
+  document.getElementById('fecha-badge').textContent = str;
+}
+
+// INIT
+window.addEventListener('load', () => {
+  cargar();
+  actualizarFecha();
+  renderPedidos();
+  setTimeout(() => {
+    document.getElementById('loader').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+    }, 400);
+  }, 1100);
+});
+</script>
+</body>
+</html>
